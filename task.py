@@ -3,7 +3,14 @@ Task tool to maintain tasks.
 type : "without using argparse"
 
 Algorithm:
-    1. Parse arguments[1]
+    1. Parse arguments
+    2. If no arguments are provided, print the help message/Usage and exit
+    3. If arguments are provided, load the tasks from the file
+    4. If the first argument is "ls", print the incomplete tasks in the list
+    5. If the first argument is "add", add the new task to the pending list text file
+    6. If the first argument is "done", add the task to completed list text file
+    7. If the first argument is "del", delete the task from the pending list text file
+    8. If the first argument is "help", print the help message/Usage and exit
 """
 
 # sys library for command line arguments
@@ -45,7 +52,7 @@ def parseTasksFromFile(filename):
     return tasks
 
 # second function : ls deals with listing the incomplete items in the list
-def preetyTaskPrinter(tasks,printPriority=True):
+def prettyTaskPrinter(tasks,printPriority=True):
     """
     ['task.py', 'ls']
     List incomplete priority list items sorted by priority in ascending order
@@ -85,11 +92,7 @@ def add():
         return False
     priority = sys.argv[2]
     text = " ".join(sys.argv[3:])
-    # add the new task to the task.txt file as per the format with the priority and text in correct priority order
-    #TODO : Check if file end with new line
-    # with open("task.txt", "r") as f:
-    #     if f.read()[-1] == "\n":
-            
+    # add the new task to the task.txt file as per the format with the priority and text
     with open("task.txt", "a" if pendingTasks else "w" ) as f:
         f.write("{} {}\n".format(priority, text))
     print("Added task: \"{}\" with priority {}".format(text, priority),end="")
@@ -185,10 +188,10 @@ def report():
     3. yet another completed task
     """
     print("Pending : {}".format(len(pendingTasks)))
-    preetyTaskPrinter(pendingTasks)
+    prettyTaskPrinter(pendingTasks)
     print(end="\n\n")
     print("Completed : {}".format(len(completedTasks)))
-    preetyTaskPrinter(completedTasks,printPriority=False)
+    prettyTaskPrinter(completedTasks,printPriority=False)
     print()
 
 if __name__ == '__main__':
@@ -201,7 +204,7 @@ if __name__ == '__main__':
         pendingTasks = parseTasksFromFile("task.txt") if os.path.exists("task.txt") else {}
         completedTasks = parseTasksFromFile("completed.txt") if os.path.exists("completed.txt") else {}
         if sys.argv[1] == "ls":
-            preetyTaskPrinter(pendingTasks) if pendingTasks else print("There are no pending tasks!",end="")
+            prettyTaskPrinter(pendingTasks) if pendingTasks else print("There are no pending tasks!",end="")
             print()
         elif sys.argv[1] == "add":
             add()
