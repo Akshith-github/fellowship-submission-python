@@ -1,3 +1,22 @@
+# Small Note
+   Just an optional information that i want to mention.
+   ```
+   $ chmod +x ./README.md
+   $ ln -s task.sh task
+   ```
+   After the successfull execution of the above command, the tests can be run by below commands.
+   
+   1. To install the dependencies
+   ```
+   $ npm install
+   ```
+   2. To run the tests
+   ```
+   $ npm test
+   or
+   $ make
+   ```
+
 # Global Digital Corps - Software Engineering Test Problem | Priority list
 
 Thanks for applying to the Global Digital Corps!
