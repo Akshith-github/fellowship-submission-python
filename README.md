@@ -4,6 +4,8 @@
    $ chmod +x ./README.md
    $ ln -s task.sh task
    ```
+   >"ln -s task.sh task" command may return "ln: failed to create symbolic link 'task': File exists" if task file is already in folder
+
    After the successfull execution of the above command, the tests can be run by below commands.
    
    1. To install the dependencies
