@@ -85,12 +85,12 @@ def getInsertionIndex(priority):
         lineCount = 0
         try:
             with open("task.txt", "r") as f:
-                for index,line in enumerate(f,1):
+                for index,line in enumerate(f,0):
                     line = line.strip().split(" ")
-                    if int(line[0])>=priority:
+                    if int(line[0])>priority:
                         return index
-                    lineCount = index
-                return lineCount+1
+                    lineCount += 1
+            return lineCount
         except Exception as e:
             print("Error:Unable to read the task file!\n{}".format(e))
             sys.exit(1)
@@ -122,11 +122,14 @@ def add():
     index = getInsertionIndex(priority)
     with open("task.txt", "r+" if os.path.isfile("task.txt") else "w+") as f:
         # read lines until the index
-        for i in range(index):  f.readline()
+        cursorPosition = 0
+        for i in range(index):  cursorPosition+=len(f.readline())
+        lines = f.readlines()
         # write the new task
+        f.seek(cursorPosition)
         f.write("{} {}\n".format(priority, text))
         # read the rest of the lines
-        for line in f:  f.write(line)
+        for line in lines:  f.write(line)
     # or the below method overwriting complete file
     """ with open("task.txt", "r+" if os.path.isfile("task.txt") else "w+") as f:
         # read the file and store the lines in a list
@@ -230,7 +233,7 @@ def done():
         print("Marked item as done.")
         # print("Marked item with index {} as complete".format(sys.argv[2]))
     else:
-        print("Error: no incomplete item with index #0 exists.")
+        print("Error: no incomplete item with index #{} exists.".format(sys.argv[2]))
         # print("Error: item with index {} does not exist. Nothing marked as complete.".format(sys.argv[2]))
 
 #sixth report : prints the statistics of the list
@@ -250,11 +253,15 @@ def report():
     completedTasks = [str(linenumber)+". "+line.strip() 
                             for linenumber,line in enumerate(open("completed.txt", "r"),1)
                     ] if os.path.exists("completed.txt") else []
-    pendingTasksOutput = prettyTaskOutput()
+    pendingTasksOutput = prettyTaskOutput(returnEmptyMsg = False)
     print("Pending : {}".format( len(pendingTasksOutput.split("\n"))-1  if pendingTasksOutput else 0 ))
-    print(pendingTasksOutput)
+    if pendingTasksOutput:
+        print(pendingTasksOutput)
+    else:
+        print()
     print("Completed : {}".format(len(completedTasks)))
-    print(*completedTasks, sep="\n")
+    if completedTasks:
+        print(*completedTasks, sep="\n",end="\n")
 
 if __name__ == '__main__':
     # print(sys.argv)
@@ -267,7 +274,7 @@ if __name__ == '__main__':
         elif sys.argv[1] == "add":
             add()
         elif sys.argv[1] == "del":
-            print(delete())
+            delete()
         elif sys.argv[1] == "done":
             done()
         elif sys.argv[1] == "report":
