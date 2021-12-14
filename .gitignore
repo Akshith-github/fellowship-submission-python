@@ -2,3 +2,6 @@ node_modules
 package-lock.json
 completed.txt
 task.txt
+otherUserTasks/task2.sh
+.gitignore
+otherUserTasks/task2

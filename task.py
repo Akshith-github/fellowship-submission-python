@@ -23,22 +23,22 @@ import os
 # commands = [ "help" , "add" , "ls" , "del" , "done", "report"]
 
 # first function : help deals with printing the help message
-help = lambda : print("""$ ./task help
-Usage :-
+help = lambda : sys.stdout.write("""Usage :-
 $ ./task add 2 hello world    # Add a new item with priority 2 and text "hello world" to the list
 $ ./task ls                   # Show incomplete priority list items sorted by priority in ascending order
 $ ./task del INDEX            # Delete the incomplete item with the given index
 $ ./task done INDEX           # Mark the incomplete item with the given index as complete
 $ ./task help                 # Show usage
-$ ./task report               # Statistics""" , end="")
+$ ./task report               # Statistics\n""")
 
 
 """
 Task Format : <priority> <text>
 Files : 
     1. task.txt  # task.txt is the file that stores the list of tasks
+    File Format : <priority> <text> in each line one task with priority
     2. completed.txt # completed.txt is the file that stores the list of completed tasks
-File Format : <priority> <text> in each line one task
+    File Format : <text> in each line one task
 """
 def parseTasksFromFile(filename):
     """
@@ -52,7 +52,7 @@ def parseTasksFromFile(filename):
     return tasks
 
 # second function : ls deals with listing the incomplete items in the list
-def prettyTaskPrinter(tasks,printPriority=True):
+def prettyTaskOutput(returnEmptyMsg=True):
     """
     ['task.py', 'ls']
     List incomplete priority list items sorted by priority in ascending order
@@ -61,15 +61,39 @@ def prettyTaskPrinter(tasks,printPriority=True):
         1. change light bulb [2]
         2. water the plants [5]
     """
-    tasks = sortedItems(tasks)
-    if printPriority:
-        for i,taskLineNum in enumerate(tasks,1):
-            print("{}. {} [{}]".format(i, taskLineNum[1][0], taskLineNum[1][1]),end = "" if i == len(tasks) else "\n")
+    output = ""
+    if os.path.exists("task.txt"):
+        with open("task.txt", "r") as f:
+            for linenumber,line in enumerate(f,1):
+                line = line.strip().split(" ")
+                output += "{}. {} [{}]\n".format(linenumber, " ".join(line[1:]), line[0])
+    if not output:
+        if returnEmptyMsg:
+            return ("There are no pending tasks!")
+        else:
+            return False
+    return output
+
+def getInsertionIndex(priority):
+    """
+    Return the insertion index of the new task 
+    Approach : linear Search
+    """
+    if not os.path.isfile("task.txt"):
+        return 0
     else:
-        for i,taskLineNum in enumerate(tasks,1):
-            print("{}. {}".format(taskLineNum[0], taskLineNum[1][0]),end = "" if i == len(tasks) else "\n")
-        # print("{}. {} [{}]".format(taskLineNum, 
-        #         pendingTasks[taskLineNum][0], pendingTasks[taskLineNum][1]))
+        lineCount = 0
+        try:
+            with open("task.txt", "r") as f:
+                for index,line in enumerate(f,1):
+                    line = line.strip().split(" ")
+                    if int(line[0])>=priority:
+                        return index
+                    lineCount = index
+                return lineCount+1
+        except Exception as e:
+            print("Error:Unable to read the task file!\n{}".format(e))
+            sys.exit(1)
 
 # third function : add deals with adding a new item to the list
 def add():
@@ -84,63 +108,92 @@ def add():
     """
     try:
         priority = int(sys.argv[2])
+        if not sys.argv[3]: # tries to access the text from the sys.argv[3]
+            raise IndexError
         text = " ".join(sys.argv[3:])
         if priority<0:
             raise ValueError
     except Exception as e:
         print("Error: Missing tasks string. Nothing added!")
         return False
-    priority = sys.argv[2]
-    text = " ".join(sys.argv[3:])
     # add the new task to the task.txt file as per the format with the priority and text
-    with open("task.txt", "a" if pendingTasks else "w" ) as f:
+    # The files should always be sorted in order of the priority, ie, the task with the highest priority(lowest priority numerical value) should be first item in the file.
+    # The tasks should be sorted in ascending order of priority.
+    index = getInsertionIndex(priority)
+    with open("task.txt", "r+" if os.path.isfile("task.txt") else "w+") as f:
+        # read lines until the index
+        for i in range(index):  f.readline()
+        # write the new task
         f.write("{} {}\n".format(priority, text))
-    print("Added task: \"{}\" with priority {}".format(text, priority),end="")
+        # read the rest of the lines
+        for line in f:  f.write(line)
+    # or the below method overwriting complete file
+    """ with open("task.txt", "r+" if os.path.isfile("task.txt") else "w+") as f:
+        # read the file and store the lines in a list
+        lines = f.readlines()
+        # insert the new task at the index
+        lines.insert(index, str(priority)+" "+text+"\n")
+        # write the list back to the file
+        f.seek(0)
+        f.write("".join(lines)) """
+
+    print("Added task: \"{}\" with priority {}".format(text, priority))
 
 # fourth function : delete deals with deleting an item from the list
-def delete(printLog=True,itemIndex=None):
+def delete(printLog=True,index=None):
     """
         ['task.py', 'del', '2']
-        index : int from sys.argv[2]
+        index : int from sys.argv[2] or line number of the task to be deleted
         Delete the incomplete item with the given index
         Example:
         $ ./task del 3
         Deleted task #3
     """
     try:
-        itemIndex = int(sys.argv[2]) if not itemIndex else itemIndex
-        if not 0<itemIndex<len(pendingTasks)+1:
+        index = int(sys.argv[2]) if not index else index
+        if index<1:
             raise ValueError
-        index = sortedItems(pendingTasks)[itemIndex-1][0]
-        if index not in pendingTasks:
-            raise IndexError
-    # ArgumentError : if the index is not provided
-    except IndexError:
+    except ValueError:
         if printLog:
-            print("Error: Missing NUMBER for deleting tasks.",end="")
+            print("Error: task with index #{} does not exist. Nothing deleted.".format(sys.argv[2]))
         return False
     except Exception as e:
         if printLog:
-            print("Error: task with index #{} does not exist. Nothing deleted.".format(sys.argv[2]),end="")
+            print("Error: Missing NUMBER for deleting tasks.")
         return False
-
-    # delete the task from the task.txt file at the given index line
-    with open("task.txt", "r+") as f:
-        # current lines in the file
-        lines = f.readlines()
-        # delete the line at the given index
-        lines.pop(int(index)-1)
-        # overwrite the file with the updated lines
-        # bring the cursor to the beginning of the file
-        f.seek(0)
-        # write the updated lines
-        f.writelines(lines)
-        # truncate the file i.e remove the extra lines
-        f.truncate()
-    if printLog:
-        print("Deleted task #{}".format(index),end="") 
-    return pendingTasks.pop(index)
-    # print("Deleted task: \"{}\" with priority {}".format(index, text))
+    try:
+        # delete the task from the task.txt file at the given index line number [read until the index and overwrite the rest of the file] finally truncate the file
+        with open("task.txt", "r+") as f:
+            # read the lines until the index
+            cursorPosition=0
+            for i in range(index-1):  
+                cursorPosition+=len(f.readline())
+            # read the next line
+            target = f.readline()
+            if not target: raise IndexError
+            # read the rest of the lines
+            lines=f.readlines()
+            # write the lines back to the file
+            f.seek(cursorPosition)
+            f.write("".join(lines))
+            f.truncate()
+        # or the below method overwriting complete file
+        """ with open("task.txt", "r+") as f:
+            # read the file and store the lines in a list
+            lines = f.readlines()
+            # delete the task at the index
+            del lines[index]    # del lines[index]
+            # write the list back to the file
+            f.seek(0)
+            f.write("".join(lines)) """
+        if printLog:
+            print("Deleted task #{}".format(index)) 
+            # print("Deleted task: \"{}\" with priority {}".format(index, text))
+        return " ".join(target.strip().split(" ")[1:]) # return the text of the deleted task
+    except Exception as e:
+        if printLog:
+            print("Error: task with index #{} does not exist. Nothing deleted.".format(sys.argv[2]))
+        return False
 
 def sortedItems(inputDict):
     """
@@ -153,25 +206,32 @@ def done():
     """
         ['task.py', 'done', '2']
         index : int from sys.argv[2]
-        Mark the incomplete item with the given index as complete
-        Example:
-        $ ./task done 3
-        Marked item with index 3 as complete
+        3. Completed task are writted to a completed.txt file. Each task occupies a single line in this file. Each line in the file should be in this format :
+        ```
+        task
+        ```
+        where task is the task description.
+        Here is an example file that has 2 items.
+        ```
+        Buy milk
+        Complete the project
+        ```
     """
     try:
         index = int(sys.argv[2])
     except IndexError as e:
-        print("Error: Missing NUMBER for marking tasks as done.",end="")
+        print("Error: Missing NUMBER for marking tasks as done.")
         return False
-    item = delete(printLog=False,itemIndex=int(sys.argv[2]))
+    # use the delete function to delete the task from the task.txt file and store the returned value 'task text'  in the variable item to be written to the completed.txt file
+    item = delete(printLog=False,index=int(sys.argv[2]))
     if item:
-        with open("completed.txt", "a" if completedTasks else "w" ) as f:
-            f.write("{} {}\n".format(item[1], item[0]))
-        print("Marked item as done.",end="")
-        # print("Marked item with index {} as complete".format(sys.argv[2]),end="")
+        with open("completed.txt", "a" if os.path.isfile("completed.txt") else "w+") as f:
+            f.write(item+"\n")
+        print("Marked item as done.")
+        # print("Marked item with index {} as complete".format(sys.argv[2]))
     else:
-        # print("Error: item with index {} does not exist. Nothing marked as complete.".format(sys.argv[2]),end="")
-        print("Error: no incomplete item with index #0 exists.",end="")
+        print("Error: no incomplete item with index #0 exists.")
+        # print("Error: item with index {} does not exist. Nothing marked as complete.".format(sys.argv[2]))
 
 #sixth report : prints the statistics of the list
 def report():
@@ -187,12 +247,14 @@ def report():
     2. another completed task
     3. yet another completed task
     """
-    print("Pending : {}".format(len(pendingTasks)))
-    prettyTaskPrinter(pendingTasks)
-    print(end="\n\n")
+    completedTasks = [str(linenumber)+". "+line.strip() 
+                            for linenumber,line in enumerate(open("completed.txt", "r"),1)
+                    ] if os.path.exists("completed.txt") else []
+    pendingTasksOutput = prettyTaskOutput()
+    print("Pending : {}".format( len(pendingTasksOutput.split("\n"))-1  if pendingTasksOutput else 0 ))
+    print(pendingTasksOutput)
     print("Completed : {}".format(len(completedTasks)))
-    prettyTaskPrinter(completedTasks,printPriority=False)
-    print()
+    print(*completedTasks, sep="\n")
 
 if __name__ == '__main__':
     # print(sys.argv)
@@ -200,16 +262,12 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         help()
     else:
-        # parse the txt files and store the tasks in a dictionary
-        pendingTasks = parseTasksFromFile("task.txt") if os.path.exists("task.txt") else {}
-        completedTasks = parseTasksFromFile("completed.txt") if os.path.exists("completed.txt") else {}
         if sys.argv[1] == "ls":
-            prettyTaskPrinter(pendingTasks) if pendingTasks else print("There are no pending tasks!",end="")
-            print()
+            print(prettyTaskOutput())
         elif sys.argv[1] == "add":
             add()
         elif sys.argv[1] == "del":
-            delete()
+            print(delete())
         elif sys.argv[1] == "done":
             done()
         elif sys.argv[1] == "report":

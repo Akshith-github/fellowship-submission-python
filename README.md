@@ -1,23 +1,30 @@
 # Small Note
-   Just an optional information that i want to mention.
+---
+   ## 1.   Changes for => The application should look for the text files in `/path/to/plans`, since that is the user’s current directory.
+   `$ cd /path/to/plans`
+
+   `$ /path/to/apps/task ls`
+   
+   >### To satisfy the above requirement, the task.sh file should have absolute path of the task.py file absolute path instead of relative path. **`[Changes have been Made in 'task.sh' file to support above coundition]`**
+   ---
+   ## 2. Just an optional information that i want to mention.
    ```
-   $ chmod +x ./README.md
+   $ chmod +x ./task.sh
    $ ln -s task.sh task
    ```
    >"ln -s task.sh task" command may return "ln: failed to create symbolic link 'task': File exists" if task file is already in folder
 
    After the successfull execution of the above command, the tests can be run by below commands.
    
-   1. To install the dependencies
-   ```
-   $ npm install
-   ```
-   2. To run the tests
-   ```
-   $ npm test
-   or
-   $ make
-   ```
+   1. To install the dependencies `npm install`
+   2. To run the tests `npm test` or `make`
+   <br>
+   ---
+   ##  ==== End of Note ====
+   ---
+   <br><br>
+
+   ---
 
 # Global Digital Corps - Software Engineering Test Problem | Priority list
 
